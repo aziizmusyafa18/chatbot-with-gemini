@@ -13,15 +13,19 @@ document.addEventListener('DOMContentLoaded', () => {
         // Show a temporary "typing" indicator
         appendMessage('...', 'bot');
 
-        // --- SIMULASI PANGGILAN API GEMINI ---
-        // Di aplikasi nyata, Anda akan memanggil backend Anda dari sini,
-        // yang kemudian akan memanggil API Gemini dengan aman.
+        // Panggil backend API yang terhubung ke Gemini
         getGeminiResponse(prompt).then(response => {
             // Remove the "typing" indicator
             const typingIndicator = chatHistory.lastChild;
             chatHistory.removeChild(typingIndicator);
-            
+
             appendMessage(response, 'bot');
+        }).catch(error => {
+            // Remove the "typing" indicator
+            const typingIndicator = chatHistory.lastChild;
+            chatHistory.removeChild(typingIndicator);
+
+            appendMessage('Terjadi kesalahan. Silakan coba lagi.', 'bot');
         });
     };
 
@@ -38,27 +42,32 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     /**
-     * Fungsi ini mensimulasikan respons dari Gemini.
-     * Ganti fungsi ini dengan logika panggilan API sesungguhnya ke backend Anda.
+     * Fungsi untuk memanggil backend API yang terhubung ke Gemini.
      * @param {string} prompt - The user's input.
-     * @returns {Promise<string>} A simulated response from the bot.
+     * @returns {Promise<string>} Response from Gemini AI.
      */
-    const getGeminiResponse = (prompt) => {
-        console.log(`Sending to mock API: "${prompt}"`);
+    const getGeminiResponse = async (prompt) => {
+        console.log(`Sending to Gemini API: "${prompt}"`);
 
-        return new Promise(resolve => {
-            setTimeout(() => {
-                let response;
-                if (prompt.toLowerCase().includes('halo') || prompt.toLowerCase().includes('hai')) {
-                    response = 'Halo juga! Ada yang bisa saya bantu?';
-                } else if (prompt.toLowerCase().includes('siapa kamu')) {
-                    response = 'Saya adalah model bahasa AI, dilatih oleh Google.';
-                } else {
-                    response = "Ini adalah respons simulasi. Untuk mendapatkan respons nyata, Anda perlu menghubungkan ini ke API Gemini melalui server backend.";
-                }
-                resolve(response);
-            }, 1500); // Simulate network delay
-        });
+        try {
+            const response = await fetch('http://localhost:3001/api/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ message: prompt })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            return data.response;
+        } catch (error) {
+            console.error('Error calling Gemini API:', error);
+            return 'Maaf, terjadi kesalahan saat menghubungi AI. Pastikan server backend sudah berjalan.';
+        }
     };
 
     sendButton.addEventListener('click', sendMessage);
